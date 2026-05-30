@@ -4,9 +4,10 @@ Advanced Telegram RSI Monitor Bot with Interactive Commands
 
 Features:
 - Automatic RSI monitoring and alerts
-- Interactive commands: /check-now, /status, /help, /config
+- Interactive commands: /check, /status, /help, /config, /menu
 - Real-time trading signals
 - Configurable thresholds and timeframes
+- Quick trading pair analysis (BTC, ETH, SOL, TON)
 
 Setup:
 1. pip install python-telegram-bot
@@ -14,7 +15,8 @@ Setup:
 3. Run: python telegram_rsi_monitor_bot.py
 
 Commands:
-- /check-now: Check current conditions immediately
+- /menu: Trading pairs quick check menu
+- /check or /checknow: Check current conditions immediately
 - /status: Show bot status and configuration
 - /config: View or update configuration
 - /start: Start automatic monitoring
@@ -100,19 +102,22 @@ class RSIMonitorBot:
 
         logger.info(f"Bot initialized for {self.config.symbol} ({self.config.timeframe})")
 
-    def get_rsi_data(self) -> Optional[Dict[str, Any]]:
-        """Fetch current RSI data."""
+    def get_rsi_data(self, symbol: Optional[str] = None, exchange: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Fetch current RSI data for a specific symbol."""
         try:
-            result = analyze_coin(self.config.symbol, self.config.exchange, self.config.timeframe)
+            sym = symbol or self.config.symbol
+            exch = exchange or self.config.exchange
+
+            result = analyze_coin(sym, exch, self.config.timeframe)
             rsi = result.get('rsi', {})
 
             # Get current price
-            price_symbol = self.config.symbol.replace('USDT', '-USD')
+            price_symbol = sym.replace('USDT', '-USD')
             price_data = get_price(price_symbol)
 
             return {
-                'symbol': self.config.symbol,
-                'exchange': self.config.exchange,
+                'symbol': sym,
+                'exchange': exch,
                 'timeframe': self.config.timeframe,
                 'rsi_value': rsi.get('value'),
                 'rsi_signal': rsi.get('signal'),
@@ -123,7 +128,7 @@ class RSIMonitorBot:
                 'timestamp': datetime.now().isoformat()
             }
         except Exception as e:
-            logger.error(f"Error fetching RSI data: {e}")
+            logger.error(f"Error fetching RSI data for {symbol}: {e}")
             return None
 
     def determine_zone(self, rsi_value: float) -> str:
@@ -516,6 +521,32 @@ class RSIMonitorBot:
 
         await update.message.reply_text("🛑 Automatic monitoring STOPPED")
 
+    async def cmd_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show trading pair menu for quick analysis."""
+        logger.info("Command: /menu")
+
+        keyboard = [
+            [
+                InlineKeyboardButton("₿ BTC/USDT", callback_data="check_BTCUSDT"),
+                InlineKeyboardButton("Ξ ETH/USDT", callback_data="check_ETHUSDT"),
+            ],
+            [
+                InlineKeyboardButton("◎ SOL/USDT", callback_data="check_SOLUSDT"),
+                InlineKeyboardButton("💎 TON/USDT", callback_data="check_TONUSDT"),
+            ],
+            [
+                InlineKeyboardButton("🔄 Refresh", callback_data="menu_refresh"),
+            ]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            "📊 Trading Pairs Quick Check\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "Select a trading pair to check RSI conditions and trading signals:\n",
+            reply_markup=reply_markup
+        )
+
     async def cmd_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Show help message."""
         logger.info("Command: /help")
@@ -526,6 +557,7 @@ class RSIMonitorBot:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📊 Monitoring Commands:
+/menu - Trading pairs quick check menu
 /check or /checknow - Check current conditions immediately
 /status - Show bot status and configuration
 /config - Configuration menu
@@ -540,6 +572,7 @@ class RSIMonitorBot:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 💡 Tips:
+• Use /menu to quickly check multiple trading pairs
 • Use /check to get instant RSI analysis
 • Use /start to enable automatic alerts
 • Use /config to customize settings
@@ -557,7 +590,44 @@ class RSIMonitorBot:
 
         callback_data = query.data
 
-        if callback_data == "check_now":
+        # Trading pair quick check
+        if callback_data.startswith("check_"):
+            # Extract symbol from callback (e.g., "check_BTCUSDT" -> "BTCUSDT")
+            symbol = callback_data.replace("check_", "")
+
+            await query.edit_message_text(f"🔍 Checking {symbol} RSI conditions...")
+
+            # Get RSI data for selected symbol
+            data = self.get_rsi_data(symbol=symbol)
+            if data:
+                message = self.create_status_message(data)
+                await query.edit_message_text(message)
+            else:
+                await query.edit_message_text(f"❌ Failed to fetch data for {symbol}")
+
+        # Menu refresh
+        elif callback_data == "menu_refresh":
+            keyboard = [
+                [
+                    InlineKeyboardButton("₿ BTC/USDT", callback_data="check_BTCUSDT"),
+                    InlineKeyboardButton("Ξ ETH/USDT", callback_data="check_ETHUSDT"),
+                ],
+                [
+                    InlineKeyboardButton("◎ SOL/USDT", callback_data="check_SOLUSDT"),
+                    InlineKeyboardButton("💎 TON/USDT", callback_data="check_TONUSDT"),
+                ],
+                [
+                    InlineKeyboardButton("🔄 Refresh", callback_data="menu_refresh"),
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(
+                "📊 Trading Pairs Quick Check\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                "Select a trading pair to check RSI conditions and trading signals:\n",
+                reply_markup=reply_markup
+            )
+
+        elif callback_data == "check_now":
             data = self.get_rsi_data()
             if data:
                 message = self.create_status_message(data)
@@ -621,6 +691,7 @@ class RSIMonitorBot:
 
         # Add command handlers
         # Note: Bot commands must be lowercase letters, numbers, and underscores only
+        application.add_handler(CommandHandler("menu", self.cmd_menu))
         application.add_handler(CommandHandler("check", self.cmd_check_now))
         application.add_handler(CommandHandler("checknow", self.cmd_check_now))
         application.add_handler(CommandHandler("status", self.cmd_status))
