@@ -535,6 +535,11 @@ class RSIMonitorBot:
                 InlineKeyboardButton("💎 TON/USDT", callback_data="check_TONUSDT"),
             ],
             [
+                InlineKeyboardButton("🔶 BNB/USDT", callback_data="check_BNBUSDT"),
+                InlineKeyboardButton("🅰️ ADA/USDT", callback_data="check_ADAUSDT"),
+            ],
+            [
+                InlineKeyboardButton("✖️ XRP/USDT", callback_data="check_XRPUSDT"),
                 InlineKeyboardButton("🔄 Refresh", callback_data="menu_refresh"),
             ]
         ]
@@ -617,6 +622,11 @@ class RSIMonitorBot:
                     InlineKeyboardButton("💎 TON/USDT", callback_data="check_TONUSDT"),
                 ],
                 [
+                    InlineKeyboardButton("🔶 BNB/USDT", callback_data="check_BNBUSDT"),
+                    InlineKeyboardButton("🅰️ ADA/USDT", callback_data="check_ADAUSDT"),
+                ],
+                [
+                    InlineKeyboardButton("✖️ XRP/USDT", callback_data="check_XRPUSDT"),
                     InlineKeyboardButton("🔄 Refresh", callback_data="menu_refresh"),
                 ]
             ]
