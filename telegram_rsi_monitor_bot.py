@@ -3,11 +3,11 @@
 Advanced Telegram RSI Monitor Bot with Interactive Commands
 
 Features:
-- Automatic RSI monitoring and alerts
+- Automatic RSI monitoring and alerts for multiple trading pairs
 - Interactive commands: /check, /status, /help, /config, /menu
-- Real-time trading signals
+- Real-time trading signals with Entry, TP, SL levels
 - Configurable thresholds and timeframes
-- Quick trading pair analysis (BTC, ETH, SOL, TON)
+- Quick trading pair analysis (BTC, ETH, SOL, TON, BNB, ADA, XRP)
 
 Setup:
 1. pip install python-telegram-bot
@@ -19,9 +19,14 @@ Commands:
 - /check or /checknow: Check current conditions immediately
 - /status: Show bot status and configuration
 - /config: View or update configuration
-- /start: Start automatic monitoring
+- /start: Start automatic monitoring (all 7 pairs)
 - /stop: Stop automatic monitoring
 - /help: Show all available commands
+
+Auto-Monitoring:
+- Scans all 7 trading pairs every 5 minutes
+- Sends alerts when RSI breaks key levels (60 bullish, 50 bearish)
+- Includes exact Entry, Take Profit, Stop Loss with 1:2 R:R ratio
 """
 
 import os
@@ -74,6 +79,14 @@ class BotConfig:
     check_interval: int = 300  # 5 minutes
     alert_cooldown: int = 3600  # 1 hour
 
+    # Multi-pair monitoring
+    monitor_all_pairs: bool = True
+    trading_pairs: list = None
+
+    def __post_init__(self):
+        if self.trading_pairs is None:
+            self.trading_pairs = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "TONUSDT", "BNBUSDT", "ADAUSDT", "XRPUSDT"]
+
 
 class RSIMonitorBot:
     """Advanced RSI Monitor Bot with interactive commands."""
@@ -88,9 +101,14 @@ class RSIMonitorBot:
         self.chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID")
         self.config = config or BotConfig()
 
-        # State tracking
+        # State tracking - single symbol (for /check command)
         self.last_rsi: Optional[float] = None
         self.last_alert_time: Optional[datetime] = None
+
+        # State tracking - multi-pair monitoring
+        self.pair_last_rsi: Dict[str, Optional[float]] = {pair: None for pair in self.config.trading_pairs}
+        self.pair_last_alert_time: Dict[str, Optional[datetime]] = {pair: None for pair in self.config.trading_pairs}
+
         self.monitoring_active = False
         self.monitoring_task: Optional[asyncio.Task] = None
 
@@ -100,7 +118,7 @@ class RSIMonitorBot:
         if not self.chat_id:
             raise ValueError("TELEGRAM_CHAT_ID not set")
 
-        logger.info(f"Bot initialized for {self.config.symbol} ({self.config.timeframe})")
+        logger.info(f"Bot initialized for {len(self.config.trading_pairs)} trading pairs: {', '.join(self.config.trading_pairs)}")
 
     def get_rsi_data(self, symbol: Optional[str] = None, exchange: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Fetch current RSI data for a specific symbol."""
@@ -250,6 +268,33 @@ class RSIMonitorBot:
         # Bearish breakdown
         if rsi_value < self.config.rsi_bearish_threshold and is_falling:
             if self.last_rsi and self.last_rsi >= self.config.rsi_bearish_threshold:
+                return self._create_bearish_alert(data)
+
+        return None
+
+    def check_breakout_conditions_multi_pair(self, data: Dict, symbol: str) -> Optional[str]:
+        """Check if breakout conditions are met for a specific symbol in multi-pair mode."""
+        rsi_value = data.get('rsi_value')
+        if rsi_value is None:
+            return None
+
+        rsi_direction = data.get('rsi_direction', '')
+        is_rising = 'Rising' in rsi_direction
+        is_falling = 'Falling' in rsi_direction
+
+        # Get last RSI for this specific symbol
+        last_rsi = self.pair_last_rsi.get(symbol)
+
+        # Bullish breakout
+        if rsi_value > self.config.rsi_bullish_threshold and is_rising:
+            if last_rsi and last_rsi <= self.config.rsi_bullish_threshold:
+                logger.info(f"Bullish breakout detected for {symbol}")
+                return self._create_bullish_alert(data)
+
+        # Bearish breakdown
+        if rsi_value < self.config.rsi_bearish_threshold and is_falling:
+            if last_rsi and last_rsi >= self.config.rsi_bearish_threshold:
+                logger.info(f"Bearish breakdown detected for {symbol}")
                 return self._create_bearish_alert(data)
 
         return None
@@ -445,21 +490,24 @@ class RSIMonitorBot:
         """Show bot status and configuration."""
         logger.info("Command: /status")
 
+        pairs_list = '\n'.join([f"  • {pair}" for pair in self.config.trading_pairs])
+
         status_text = f"""
 🤖 Bot Status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📊 Configuration:
-• Symbol: {self.config.symbol}
 • Exchange: {self.config.exchange}
 • Timeframe: {self.config.timeframe}
 • Bullish Threshold: {self.config.rsi_bullish_threshold}
 • Bearish Threshold: {self.config.rsi_bearish_threshold}
-• Check Interval: {self.config.check_interval}s
+• Check Interval: {self.config.check_interval}s ({self.config.check_interval//60} minutes)
+• Alert Cooldown: {self.config.alert_cooldown}s ({self.config.alert_cooldown//60} minutes)
+
+📈 Monitoring Pairs ({len(self.config.trading_pairs)}):
+{pairs_list}
 
 ⚙️ Monitoring: {'🟢 Active' if self.monitoring_active else '🔴 Inactive'}
-📡 Last RSI: {self.last_rsi if self.last_rsi else 'N/A'}
-⏰ Last Alert: {self.last_alert_time.strftime('%H:%M:%S') if self.last_alert_time else 'Never'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
@@ -500,7 +548,14 @@ class RSIMonitorBot:
             return
 
         self.monitoring_active = True
-        await update.message.reply_text(f"🚀 Automatic monitoring STARTED\n\nChecking every {self.config.check_interval}s")
+        pairs_list = ', '.join(self.config.trading_pairs)
+        await update.message.reply_text(
+            f"🚀 Automatic monitoring STARTED\n\n"
+            f"📊 Monitoring {len(self.config.trading_pairs)} pairs: {pairs_list}\n"
+            f"⏱️ Checking every {self.config.check_interval}s ({self.config.check_interval//60} minutes)\n"
+            f"🎯 Bullish Threshold: {self.config.rsi_bullish_threshold}\n"
+            f"🎯 Bearish Threshold: {self.config.rsi_bearish_threshold}"
+        )
 
         # Start monitoring task
         self.monitoring_task = asyncio.create_task(self._monitoring_loop())
@@ -582,7 +637,7 @@ class RSIMonitorBot:
 • Use /start to enable automatic alerts
 • Use /config to customize settings
 
-⚠️ Note: Automatic monitoring checks RSI every 5 minutes and sends alerts when breakout conditions are met.
+⚠️ Note: Automatic monitoring checks all 7 trading pairs every 5 minutes and sends alerts when breakout conditions are met.
 """
         await update.message.reply_text(help_text.strip())
 
@@ -659,32 +714,45 @@ class RSIMonitorBot:
     # ========== Monitoring Loop ==========
 
     async def _monitoring_loop(self):
-        """Automatic monitoring loop."""
+        """Automatic monitoring loop - checks all trading pairs."""
         logger.info("Monitoring loop started")
 
         while self.monitoring_active:
             try:
-                # Get current data
-                data = self.get_rsi_data()
+                # Check all trading pairs
+                for symbol in self.config.trading_pairs:
+                    try:
+                        # Get current data for this symbol
+                        data = self.get_rsi_data(symbol=symbol)
 
-                if data and data.get('rsi_value'):
-                    rsi_value = data['rsi_value']
-                    logger.info(f"RSI Check: {rsi_value:.2f} ({data.get('rsi_signal')})")
+                        if data and data.get('rsi_value'):
+                            rsi_value = data['rsi_value']
+                            logger.info(f"RSI Check {symbol}: {rsi_value:.2f} ({data.get('rsi_signal')})")
 
-                    # Check cooldown
-                    if self.last_alert_time:
-                        time_since_last = (datetime.now() - self.last_alert_time).total_seconds()
-                        if time_since_last < self.config.alert_cooldown:
-                            logger.debug("In cooldown period")
-                        else:
-                            # Check for breakout conditions
-                            alert = self.check_breakout_conditions(data)
-                            if alert:
-                                await self.send_message(alert)
-                                self.last_alert_time = datetime.now()
+                            # Get last alert time for this symbol
+                            last_alert = self.pair_last_alert_time.get(symbol)
+                            cooldown_active = False
 
-                    # Update last RSI
-                    self.last_rsi = rsi_value
+                            if last_alert:
+                                time_since_last = (datetime.now() - last_alert).total_seconds()
+                                if time_since_last < self.config.alert_cooldown:
+                                    logger.debug(f"{symbol} in cooldown period")
+                                    cooldown_active = True
+
+                            if not cooldown_active:
+                                # Check for breakout conditions
+                                alert = self.check_breakout_conditions_multi_pair(data, symbol)
+                                if alert:
+                                    await self.send_message(alert)
+                                    self.pair_last_alert_time[symbol] = datetime.now()
+
+                            # Update last RSI for this symbol
+                            self.pair_last_rsi[symbol] = rsi_value
+
+                    except Exception as e:
+                        logger.error(f"Error checking {symbol}: {e}")
+
+                logger.info(f"Completed checking all {len(self.config.trading_pairs)} pairs")
 
             except Exception as e:
                 logger.error(f"Error in monitoring loop: {e}")
