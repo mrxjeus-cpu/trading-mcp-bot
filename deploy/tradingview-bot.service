@@ -1,0 +1,44 @@
+[Unit]
+Description=TradingView RSI Monitor Bot
+Documentation=https://github.com/atilaahmettaner/tradingview-mcp
+After=network.target
+
+[Service]
+Type=simple
+User=tradingbot
+Group=tradingbot
+WorkingDirectory=/opt/tradingview-bot
+
+# Environment Variables
+Environment="TELEGRAM_BOT_TOKEN=7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k"
+Environment="TELEGRAM_CHAT_ID=1827491548"
+Environment="BOT_SYMBOL=BTCUSDT"
+Environment="BOT_EXCHANGE=BINANCE"
+Environment="BOT_TIMEFRAME=1h"
+Environment="BOT_BULLISH_THRESHOLD=60"
+Environment="BOT_BEARISH_THRESHOLD=50"
+Environment="BOT_CHECK_INTERVAL=300"
+
+# Command to run
+ExecStart=/usr/local/bin/uv run python telegram_rsi_monitor_bot.py
+
+# Auto-restart configuration
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tradingview-bot
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/tradingview-bot
+
+[Install]
+WantedBy=multi-user.target
