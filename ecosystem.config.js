@@ -2,8 +2,8 @@ module.exports = {
   apps: [{
     name: 'tradingview-bot',
     script: 'telegram_rsi_monitor_bot.py',
-    interpreter: 'uv',
-    interpreter_args: 'run',
+    interpreter: '/tmp/trading-mcp-bot/.venv/bin/python',
+    interpreter_args: '-u',
     cwd: '/tmp/trading-mcp-bot',
 
     // Environment variables
@@ -16,7 +16,8 @@ module.exports = {
       BOT_BULLISH_THRESHOLD: '60',
       BOT_BEARISH_THRESHOLD: '50',
       BOT_CHECK_INTERVAL: '300',
-      PATH: '/root/.local/bin:/usr/bin:/bin'
+      PATH: '/root/.local/bin:/usr/bin:/bin',
+      PYTHONPATH: '/tmp/trading-mcp-bot/src:/tmp/trading-mcp-bot'
     },
 
     // Auto-restart configuration
