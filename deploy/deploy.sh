@@ -90,13 +90,23 @@ cp -r "$PROJECT_DIR"/* "$INSTALL_DIR/"
 cd "$INSTALL_DIR"
 
 echo -e "${GREEN}✓${NC} Project copied to $INSTALL_DIR"
+
+# Create virtual environment
+echo -e "  Creating virtual environment with UV..."
+export PATH="$HOME/.local/bin:$PATH"
+uv venv
+
+echo -e "${GREEN}✓${NC} Virtual environment created"
 echo ""
 
 ################################################################################
 # Step 5: Install Python Dependencies
 ################################################################################
 echo -e "${YELLOW}[5/7]${NC} Installing Python dependencies..."
-uv pip install -r requirements.txt 2>/dev/null || uv pip install \
+export PATH="$HOME/.local/bin:$PATH"
+
+# Install dependencies using uv
+uv pip install -r "$INSTALL_DIR/deploy/requirements.txt" 2>/dev/null || uv pip install \
     mcp[cli] \
     requests \
     tradingview-screener \
@@ -131,10 +141,12 @@ After=network.target
 [Service]
 Type=simple
 User=tradingbot
+Group=tradingbot
 WorkingDirectory=/opt/tradingview-bot
-Environment="TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN_HERE"
-Environment="TELEGRAM_CHAT_ID=YOUR_CHAT_ID_HERE"
-ExecStart=/usr/local/bin/uv run python telegram_rsi_monitor_bot.py
+Environment="PATH=/root/.local/bin:/usr/bin:/bin"
+Environment="TELEGRAM_BOT_TOKEN=7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k"
+Environment="TELEGRAM_CHAT_ID=1827491548"
+ExecStart=/root/.local/bin/uv run --python /opt/tradingview-bot/.venv/bin/python telegram_rsi_monitor_bot.py
 Restart=always
 RestartSec=10
 
@@ -146,6 +158,7 @@ SyslogIdentifier=tradingview-bot
 # Security
 NoNewPrivileges=true
 PrivateTmp=true
+ReadWritePaths=/opt/tradingview-bot
 
 [Install]
 WantedBy=multi-user.target

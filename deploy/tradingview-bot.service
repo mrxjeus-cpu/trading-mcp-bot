@@ -10,6 +10,7 @@ Group=tradingbot
 WorkingDirectory=/opt/tradingview-bot
 
 # Environment Variables
+Environment="PATH=/root/.local/bin:/usr/bin:/bin"
 Environment="TELEGRAM_BOT_TOKEN=7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k"
 Environment="TELEGRAM_CHAT_ID=1827491548"
 Environment="BOT_SYMBOL=BTCUSDT"
@@ -20,7 +21,7 @@ Environment="BOT_BEARISH_THRESHOLD=50"
 Environment="BOT_CHECK_INTERVAL=300"
 
 # Command to run
-ExecStart=/usr/local/bin/uv run python telegram_rsi_monitor_bot.py
+ExecStart=/root/.local/bin/uv run --python /opt/tradingview-bot/.venv/bin/python telegram_rsi_monitor_bot.py
 
 # Auto-restart configuration
 Restart=always
