@@ -2,9 +2,9 @@ module.exports = {
   apps: [{
     name: 'tradingview-bot',
     script: 'telegram_rsi_monitor_bot.py',
-    interpreter: 'python3',
-    interpreter_args: '-u',
-    cwd: '/opt/tradingview-bot',
+    interpreter: 'uv',
+    interpreter_args: 'run',
+    cwd: '/tmp/trading-mcp-bot',
 
     // Environment variables
     env: {
@@ -25,9 +25,9 @@ module.exports = {
     max_memory_restart: '500M',
 
     // Logging
-    log_file: '/opt/tradingview-bot/logs/app.log',
-    error_file: '/opt/tradingview-bot/logs/error.log',
-    out_file: '/opt/tradingview-bot/logs/out.log',
+    log_file: '/tmp/trading-mcp-bot/logs/app.log',
+    error_file: '/tmp/trading-mcp-bot/logs/error.log',
+    out_file: '/tmp/trading-mcp-bot/logs/out.log',
     log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
     merge_logs: true,
 
