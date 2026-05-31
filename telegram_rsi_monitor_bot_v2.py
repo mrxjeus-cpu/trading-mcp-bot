@@ -1201,7 +1201,7 @@ Aligned Indicators:
 
         await update.message.reply_text("🛑 Automatic monitoring STOPPED")
 
-    async def cmd_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def cmd_trade(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Show trading pair menu for quick analysis."""
         logger.info("Command: /trade")
 
@@ -1606,6 +1606,7 @@ Current: {current_mode}
         application = Application.builder().token(self.bot_token).build()
 
         # Add command handlers
+        application.add_handler(CommandHandler("trade", self.cmd_trade))
         application.add_handler(CommandHandler("menu", self.cmd_menu))
         application.add_handler(CommandHandler("check", self.cmd_check_now))
         application.add_handler(CommandHandler("checknow", self.cmd_check_now))
