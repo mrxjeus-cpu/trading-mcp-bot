@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'tradingview-bot',
-    script: 'telegram_rsi_monitor_bot.py',
+    script: 'telegram_rsi_monitor_bot_v2.py',
     interpreter: '/tmp/trading-mcp-bot/.venv/bin/python',
     interpreter_args: '-u',
     cwd: '/tmp/trading-mcp-bot',
@@ -9,7 +9,7 @@ module.exports = {
     // Environment variables
     env: {
       TELEGRAM_BOT_TOKEN: '7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k',
-      TELEGRAM_CHAT_ID: '1827491548',
+      TELEGRAM_CHAT_ID: '-1003923788619',
       BOT_SYMBOL: 'BTCUSDT',
       BOT_EXCHANGE: 'BINANCE',
       BOT_TIMEFRAME: '1h',

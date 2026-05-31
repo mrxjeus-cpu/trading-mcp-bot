@@ -13,13 +13,19 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  🚀 TradingView MCP Bot - VPS Deployment"
+echo "  🚀 TradingView MCP Bot v2 - VPS Deployment"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "📋 System Requirements:"
 echo "  • OS: Ubuntu 20.04+ / Debian 11+"
 echo "  • RAM: 2GB+ (recommended)"
 echo "  • Disk: 10GB+ free space"
+echo ""
+echo "🎯 Features:"
+echo "  • Multi-Timeframe Analysis (1h, 4h, 1d)"
+echo "  • EMA + Fibonacci Confluence"
+echo "  • Exchange Volume Analysis (Binance)"
+echo "  • Signal Mode Switching (Threshold/Confluence)"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
@@ -56,7 +62,8 @@ apt install -y \
     git \
     curl \
     fail2ban \
-    ufw
+    ufw \
+    nginx
 
 echo -e "${GREEN}✓${NC} Dependencies installed"
 echo ""
@@ -106,14 +113,7 @@ echo -e "${YELLOW}[5/7]${NC} Installing Python dependencies..."
 export PATH="$HOME/.local/bin:$PATH"
 
 # Install dependencies using uv
-uv pip install -r "$INSTALL_DIR/deploy/requirements.txt" 2>/dev/null || uv pip install \
-    mcp[cli] \
-    requests \
-    tradingview-screener \
-    tradingview-ta \
-    feedparser \
-    python-telegram-bot \
-    pandas
+uv pip install -r "$INSTALL_DIR/deploy/requirements.txt"
 
 echo -e "${GREEN}✓${NC} Python dependencies installed"
 echo ""
@@ -132,10 +132,37 @@ fi
 # Set ownership
 chown -R tradingbot:tradingbot "$INSTALL_DIR"
 
-# Create systemd service
+# Create PM2 ecosystem file
+cat > "$INSTALL_DIR/ecosystem.config.js" << 'EOF'
+module.exports = {
+  apps: [{
+    name: "tradingview-bot",
+    script: "telegram_rsi_monitor_bot_v2.py",
+    interpreter: "python3",
+    interpreter_args: "-m",
+    cwd: "/opt/tradingview-bot",
+    env: {
+      TELEGRAM_BOT_TOKEN: "YOUR_BOT_TOKEN_HERE",
+      TELEGRAM_CHAT_ID: "YOUR_CHAT_ID_HERE",
+      PYTHONPATH: "/opt/tradingview-bot:/opt/tradingview-bot/src"
+    },
+    error_file: "/var/log/tradingview-bot-error.log",
+    out_file: "/var/log/tradingview-bot-out.log",
+    log_date_format: "YYYY-MM-DD HH:mm:ss",
+    merge_logs: true,
+    autorestart: true,
+    max_restarts: 10,
+    min_uptime: "10s",
+    max_memory_restart: "500M",
+    restart_delay: 4000
+  }]
+};
+EOF
+
+# Create systemd service (alternative to PM2)
 cat > /etc/systemd/system/tradingview-bot.service << 'EOF'
 [Unit]
-Description=TradingView RSI Monitor Bot
+Description=TradingView RSI Monitor Bot v2
 After=network.target
 
 [Service]
@@ -144,9 +171,10 @@ User=tradingbot
 Group=tradingbot
 WorkingDirectory=/opt/tradingview-bot
 Environment="PATH=/root/.local/bin:/usr/bin:/bin"
-Environment="TELEGRAM_BOT_TOKEN=7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k"
-Environment="TELEGRAM_CHAT_ID=1827491548"
-ExecStart=/root/.local/bin/uv run --python /opt/tradingview-bot/.venv/bin/python telegram_rsi_monitor_bot.py
+Environment="PYTHONPATH=/opt/tradingview-bot:/opt/tradingview-bot/src"
+Environment="TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN_HERE"
+Environment="TELEGRAM_CHAT_ID=YOUR_CHAT_ID_HERE"
+ExecStart=/root/.local/bin/uv run --python /opt/tradingview-bot/.venv/bin/python telegram_rsi_monitor_bot_v2.py
 Restart=always
 RestartSec=10
 
@@ -192,22 +220,36 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo "📝 NEXT STEPS:"
 echo ""
-echo "1. Edit configuration file:"
-echo "   sudo nano /opt/tradingview-bot/.env"
-echo ""
-echo "2. Update systemd service with your credentials:"
+echo "1. ⚙️  Edit configuration file:"
 echo "   sudo nano /etc/systemd/system/tradingview-bot.service"
-echo "   Replace YOUR_BOT_TOKEN_HERE and YOUR_CHAT_ID_HERE"
 echo ""
-echo "3. Reload systemd and start service:"
+echo "2. 🔑 Replace YOUR_BOT_TOKEN_HERE and YOUR_CHAT_ID_HERE:"
+echo "   • Get Bot Token from @BotFather"
+echo "   • Get Chat ID from @getidsbot (group: -100xxxxxxxxxx)"
+echo ""
+echo "3. 🔄 Reload systemd and start service:"
 echo "   sudo systemctl daemon-reload"
 echo "   sudo systemctl enable tradingview-bot"
 echo "   sudo systemctl start tradingview-bot"
 echo ""
-echo "4. Check service status:"
+echo "4. 📊 Check service status:"
 echo "   sudo systemctl status tradingview-bot"
 echo ""
-echo "5. View logs:"
+echo "5. 📝 View logs:"
 echo "   sudo journalctl -u tradingview-bot -f"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "📱 Available Telegram Commands:"
+echo "  /trade  - Trading pairs quick check"
+echo "  /check  - Check current conditions"
+echo "  /status - Show bot status"
+echo "  /config - Configuration menu"
+echo "  /mode   - Switch signal mode"
+echo "  /start  - Start auto monitoring"
+echo "  /stop   - Stop auto monitoring"
+echo "  /info   - Bot features introduction"
+echo "  /menu   - Command menu"
+echo "  /help   - Detailed help"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
