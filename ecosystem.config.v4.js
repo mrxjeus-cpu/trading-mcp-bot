@@ -1,0 +1,51 @@
+module.exports = {
+  apps: [{
+    name: 'tradingview-bot-v4',
+    script: 'telegram_rsi_monitor_bot_v4.py',
+    interpreter: '.venv/bin/python',
+    interpreter_args: '-u',
+    cwd: '/tmp/trading-mcp-bot',
+
+    // Environment variables
+    env: {
+      TELEGRAM_BOT_TOKEN: '6201562127:AAF7ktbBYfljTvMEi0ZDXekIPHiElkaSRSM',
+      TELEGRAM_CHAT_ID: '-1003923788619',
+      BOT_SYMBOL: 'BTCUSDT',
+      BOT_EXCHANGE: 'BINANCE',
+      BOT_TIMEFRAME: '4h',  // 4H timeframe for EMA analysis
+      BOT_BULLISH_THRESHOLD: '60',
+      BOT_BEARISH_THRESHOLD: '50',
+      BOT_CHECK_INTERVAL: '1800',  // 30 minutes (NEW v4)
+      PATH: '/root/.local/bin:/usr/bin:/bin',
+      PYTHONPATH: '/tmp/trading-mcp-bot/src:/tmp/trading-mcp-bot',
+
+      // EMA Strategy Configuration (NEW v4)
+      TREND_MODE: 'auto',  // 'uptrend', 'downtrend', 'auto'
+      EMA_PROXIMITY_PCT: '0.8',  // EMA touch threshold (%)
+    },
+
+    // Auto-restart configuration
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '500M',
+
+    // Logging
+    log_file: '/tmp/trading-mcp-bot/logs/app.log',
+    error_file: '/tmp/trading-mcp-bot/logs/error.log',
+    out_file: '/tmp/trading-mcp-bot/logs/out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    merge_logs: true,
+
+    // Process management
+    min_uptime: '10s',
+    max_restarts: 10,
+    restart_delay: 4000,
+
+    // Execution mode
+    exec_mode: 'fork',
+    instances: 1,
+
+    // Security
+    kill_retry_time: 1000
+  }]
+};
