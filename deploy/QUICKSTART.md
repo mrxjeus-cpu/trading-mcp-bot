@@ -22,7 +22,7 @@ chmod +x deploy/deploy.sh && \
 sudo nano /etc/systemd/system/tradingview-bot.service
 
 # Update these lines:
-Environment="TELEGRAM_BOT_TOKEN=7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k"
+Environment="TELEGRAM_BOT_TOKEN=6201562127:AAF7ktbBYfljTvMEi0ZDXekIPHiElkaSRSM"
 Environment="TELEGRAM_CHAT_ID=1827491548"
 ```
 

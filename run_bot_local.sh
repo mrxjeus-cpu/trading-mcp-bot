@@ -2,7 +2,7 @@
 # Run TradingView Bot locally with EMA + Fibonacci confluence
 
 # Set environment variables
-export TELEGRAM_BOT_TOKEN="7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k"
+export TELEGRAM_BOT_TOKEN="6201562127:AAF7ktbBYfljTvMEi0ZDXekIPHiElkaSRSM"
 export TELEGRAM_CHAT_ID="-1003923788619"
 
 echo "🚀 Starting Telegram Bot with EMA + Fibonacci confluence..."

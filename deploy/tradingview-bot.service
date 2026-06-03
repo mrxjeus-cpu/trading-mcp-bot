@@ -11,7 +11,7 @@ WorkingDirectory=/opt/tradingview-bot
 
 # Environment Variables
 Environment="PATH=/root/.local/bin:/usr/bin:/bin"
-Environment="TELEGRAM_BOT_TOKEN=7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k"
+Environment="TELEGRAM_BOT_TOKEN=6201562127:AAF7ktbBYfljTvMEi0ZDXekIPHiElkaSRSM"
 Environment="TELEGRAM_CHAT_ID=1827491548"
 Environment="BOT_SYMBOL=BTCUSDT"
 Environment="BOT_EXCHANGE=BINANCE"

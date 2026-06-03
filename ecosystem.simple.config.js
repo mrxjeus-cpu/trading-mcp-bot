@@ -8,7 +8,7 @@ module.exports = {
 
     // Environment variables
     env: {
-      TELEGRAM_BOT_TOKEN: '7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k',
+      TELEGRAM_BOT_TOKEN: '6201562127:AAF7ktbBYfljTvMEi0ZDXekIPHiElkaSRSM',
       TELEGRAM_CHAT_ID: '1827491548',
       PATH: '/root/.local/bin:/usr/bin:/bin'
     },

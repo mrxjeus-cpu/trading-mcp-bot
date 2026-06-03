@@ -3,7 +3,7 @@
 # Usage: ./start_telegram_monitor.sh [once|continuous]
 
 # Telegram Bot Credentials
-export TELEGRAM_BOT_TOKEN="7747661668:AAEDXP6EGeDw87eeNZiF5xNwGo8u8x0ah-k"
+export TELEGRAM_BOT_TOKEN="6201562127:AAF7ktbBYfljTvMEi0ZDXekIPHiElkaSRSM"
 export TELEGRAM_CHAT_ID="1827491548"
 
 # Script directory
